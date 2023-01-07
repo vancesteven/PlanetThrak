@@ -1,4 +1,4 @@
-# PlanetaryThermalCracking
+# PlanetThrak: Planetary Thermal Cracking
 Thermal fracturing and serpentinization calculations used in Vance et al (2007; Astrobiology) and Vance et al. (2016; Geophysical Research Letters) and Vance and Melwani Daswani (2020; Phil. Trans. Royal Soc.)
 
 The set of functions and lookup tables for Matlab generates two-layer radial structures for different planets (including spherical moons).
