@@ -1,5 +1,5 @@
- function Planets = plot_PTCracking_planets
-clear
+ % function Planets = plot_PTCracking_planets
+clear all; close all
 global R_planet_m d_ocean_m d_ocean_vector_m Tdot_str...
   n Tprime To IS_EARTH IS_MARS USE_P_EFFECTIVE rho_av rho_core_max... 
      PLOT_ZT_1MM PLOT_ZT_10MM PLOT_HT PLOT_H2 PLOT_GRL PLOT_AB...
@@ -7,6 +7,10 @@ global R_planet_m d_ocean_m d_ocean_vector_m Tdot_str...
     PLOT_ERRZ_VS_R INCLUDE_LARGER_ICY_WORLDS PLOT_SCHEMATIC
 
 PROCESS_NEW = 1;
+
+ % white background for figures
+set(0,'defaultfigurecolor',[1 1 1])
+set(0,'defaultAxesFontSize',15)
 
 
 INCLUDE_MAGENTAS = 1;
@@ -232,7 +236,7 @@ n = n+1;
 %===========
 t_planet = 'Ganymede';
 R_planet_m = 2631.2e3;
-d_ocean_vector_m = 900*1e3;
+d_ocean_vector_m = 900*1e3; %Vance et al. 2007, supported by Vance et al. 2014, 2018
 To = 50;
 rho_av = 1942;
 M_Ganymede =  1.35e23; % kg
@@ -542,7 +546,7 @@ end
 
 end
 figure(369);set(gcf,'Name','P vs T, 1mm'); 
-set(gca,'YDir','reverse','YLim',[0 Inf],'XLim',[-90 550],'Box','on','FontSize',20);
+set(gca,'YDir','reverse','YLim',[0 Inf],'XLim',[-90 550],'Box','on','FontSize',20,'YScale','log','Xlim',[-40 200]);
 title('Thermal Cracking','FontSize',36,'FontWeight','bold')
 xlabel('T (^oC)','FontSize',36,'FontWeight','bold');
 ylabel('P_c (MPa)','FontSize',36,'FontWeight','bold');
@@ -554,7 +558,29 @@ plot_PT(Planets);
 
 
 end
- end
+ % end
+
+%==========================================================================
+function plot_Vwater(Planets)
+R_m = [Planets.R_m];
+Vp_m3 = 4/3*pi*R_m.^3;
+Vw_m3 = Vp_m3-4/3*pi*[R_m-[Planets.d_ocean_km]*1e3].^3;
+Pct_H2O = Vw_m3./Vp_m3*100;
+
+figure(3434); clf; hold on
+for ij = 1:length(Planets)
+    hm = semilogx(Planets(ij).rho_av,Pct_H2O(ij),'o');
+    hm.MarkerFaceColor = Planets(ij).plot_color;
+    hm.MarkerEdgeColor = 'none';
+    % hm.MarkerSize = 
+    ht = text(hm.XData*1.1,hm.YData,Planets(ij).name);
+end
+box on;
+% set(gca,'xscale','log')
+xlabel('Bulk Density (kg/m^3)')
+ylabel('Volume Fraction of Ice (Water) (%)')
+
+end
 %==========================================================================
 function Planet_struct = find_PT(t_name,t_color,R_planet_m,M_planet,rho_av,d_ocean_vector_m,H,To,time)
 global CrackingFront IS_EARTH P_PREM P_Earth
@@ -984,31 +1010,6 @@ else
         P_MPa = P_bar*bar2MPa;
     end
 end
-% OLD VERSION
-% function [P,rho_mc] = get_P(z_m,d_ocean_m,R_planet_m,rho_av)
-%     global IS_EARTH IS_MARS USE_P_EFFECTIVE P_PREM;
-%     bar2MPa = 0.1;
-% 	kbar2MPa = 1e2;
-% if IS_EARTH
-%     [junk,junk,rho_mc,junk,junk,junk,P,junk] = PREM((R_planet_m-d_ocean_m-z_m)*1e-3);
-%     P_PREM = kbar2MPa*P;
-%     inds = find(z_m>d_ocean_m)
-%     P(1:length(z_m)-inds(1)-1) = 1e3*9.8*z_m/1e6;
-% 	P(inds) = (1e3*9.8*d_ocean_m + 3500*10*z_m(inds))/1e6;
-%     rho_mc = 3500;
-% elseif IS_MARS
-% 	P = 0 + 3500*6*z_m/1e6;
-% 	rho_mc = 3500;
-% else
-%     if USE_P_EFFECTIVE
-%         [P_lith,rho_mc] = d2P_2layer(R_planet_m,d_ocean_m,z_m+d_ocean_m,rho_av);
-%         P_hydr = d2P_2layer(R_planet_m,d_ocean_m+d_ocean_m,z_m+d_ocean_m,rho_av);
-%         P = bar2MPa*(P_lith-P_hydr);
-%     else
-%         [P,rho_mc] = d2P_2layer(R_planet_m,d_ocean_m,z_m + d_ocean_m,rho_av);
-%         P = P*bar2MPa;
-%     end
-% end
 end
 %============================================================
  function deMartinCrackingDepthVGrainSize
@@ -1064,11 +1065,6 @@ end
 		catch
 			P_cracking_MPa = 0;
             T_cracking_oC = 0;
-            if R_planet_m < 500e3;
-%     			z_cracking_m = R_planet_m-d_ocean_m;
-                z_cracking_m = 0;
-            else
-                z_cracking_m = 0;
-            end
+            z_cracking_m = 0;
      end
  end
