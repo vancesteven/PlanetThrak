@@ -67,12 +67,26 @@ def save_fracture_column_npz(path, column: FractureColumn, **metadata) -> Path:
 
 
 def save_planetprofile_npz(path, planet, *, mask=None, reactive_fraction=None, **metadata) -> Path:
-    """Duck-typed convenience wrapper for a completed PlanetProfile object."""
+    """Duck-typed convenience wrapper for a completed PlanetProfile object.
+
+    ``body_radius_m`` and ``body`` metadata are added automatically when the
+    corresponding PlanetProfile attributes are available, unless the caller
+    supplied explicit values.
+    """
     column = fracture_column_from_planetprofile(
         planet,
         mask=mask,
         reactive_fraction=reactive_fraction,
     )
+    bulk = getattr(planet, "Bulk", None)
+    if "body_radius_m" not in metadata and bulk is not None:
+        radius = getattr(bulk, "R_m", None)
+        if radius is not None:
+            metadata["body_radius_m"] = float(radius)
+    if "body" not in metadata:
+        name = getattr(planet, "name", None)
+        if name is not None:
+            metadata["body"] = str(name)
     return save_fracture_column_npz(path, column, **metadata)
 
 
