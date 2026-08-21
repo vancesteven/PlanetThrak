@@ -1,9 +1,10 @@
 """Portable radial-profile artifacts for PlanetProfile/PlanetThrak coupling.
 
 The file format is intentionally a simple NumPy ``.npz`` container with named
-SI-unit arrays.  It is not a serialization of PlanetProfile internals.  This
+SI-unit arrays. It is not a serialization of PlanetProfile internals. This
 keeps archived fracture calculations reproducible when PlanetProfile evolves
-and gives collaborators a small, inspectable handoff artifact.
+and gives collaborators a small, inspectable handoff artifact that can also be
+consumed by other forward models such as pyLOV3D.
 """
 
 from __future__ import annotations
@@ -17,6 +18,25 @@ from .planetprofile import fracture_column_from_arrays, fracture_column_from_pla
 
 
 SCHEMA_VERSION = 1
+
+_OPTIONAL_FIELDS = (
+    "cooling_rate_K_per_yr",
+    "pore_pressure_MPa",
+    "reactive_fraction",
+    "density_kg_m3",
+    "gravity_m_s2",
+    "thermal_expansivity_Kinv",
+    "thermal_conductivity_W_mK",
+    "porosity_fraction",
+    "bulk_modulus_Pa",
+    "shear_modulus_Pa",
+    "vp_m_s",
+    "vs_m_s",
+    "youngs_modulus_Pa",
+    "poisson_ratio",
+    "fracture_toughness_Pa_sqrt_m",
+    "grain_size_m",
+)
 
 
 def save_fracture_column_npz(path, column: FractureColumn, **metadata) -> Path:
@@ -33,20 +53,7 @@ def save_fracture_column_npz(path, column: FractureColumn, **metadata) -> Path:
         "pressure_MPa": np.asarray(column.pressure_MPa, dtype=float),
         "temperature_K": np.asarray(column.temperature_C, dtype=float) + 273.15,
     }
-    for name in (
-        "cooling_rate_K_per_yr",
-        "pore_pressure_MPa",
-        "reactive_fraction",
-        "density_kg_m3",
-        "gravity_m_s2",
-        "thermal_expansivity_Kinv",
-        "thermal_conductivity_W_mK",
-        "porosity_fraction",
-        "youngs_modulus_Pa",
-        "poisson_ratio",
-        "fracture_toughness_Pa_sqrt_m",
-        "grain_size_m",
-    ):
+    for name in _OPTIONAL_FIELDS:
         value = getattr(column, name)
         if value is not None:
             arrays[name] = np.asarray(value, dtype=float)
@@ -76,20 +83,7 @@ def load_fracture_column_npz(path) -> tuple[FractureColumn, dict[str, object]]:
         if version != SCHEMA_VERSION:
             raise ValueError(f"unsupported profile schema_version={version}; expected {SCHEMA_VERSION}")
         kwargs = {}
-        for name in (
-            "cooling_rate_K_per_yr",
-            "pore_pressure_MPa",
-            "reactive_fraction",
-            "density_kg_m3",
-            "gravity_m_s2",
-            "thermal_expansivity_Kinv",
-            "thermal_conductivity_W_mK",
-            "porosity_fraction",
-            "youngs_modulus_Pa",
-            "poisson_ratio",
-            "fracture_toughness_Pa_sqrt_m",
-            "grain_size_m",
-        ):
+        for name in _OPTIONAL_FIELDS:
             if name in data:
                 kwargs[name] = np.asarray(data[name], dtype=float)
         column = fracture_column_from_arrays(
