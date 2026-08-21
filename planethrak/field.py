@@ -24,8 +24,9 @@ class FractureField:
 
     Arrays use shape ``(nlat, nlon, nz)``. ``radius_edges_m`` increases outward,
     so radial index zero is the deepest shell. Latitude and longitude values are
-    cell centres in degrees. The current global integration path requires the
-    latitude grid to be full-sphere and equiangular.
+    cell centres in degrees. The current global integration path requires a
+    full-sphere equiangular surface grid, matching the geometry expected by the
+    downstream spherical-harmonic forward models.
     """
 
     latitude_deg: np.ndarray
@@ -55,7 +56,7 @@ class FractureField:
 
         if not all(np.all(np.isfinite(x)) for x in (lat, lon, r, a, f)):
             raise ValueError("field coordinates and values must be finite")
-        if np.any(np.diff(lat) <= 0) or np.any(np.diff(lon) <= 0):
+        if np.any(np.diff(lat) <= 0) or (lon.size > 1 and np.any(np.diff(lon) <= 0)):
             raise ValueError("latitude and longitude cell centres must increase")
         if np.any(np.diff(r) <= 0) or np.any(r <= 0):
             raise ValueError("radius_edges_m must be positive and increase outward")
@@ -63,6 +64,17 @@ class FractureField:
             raise ValueError("accessibility must lie in [0,1]")
         if np.any(f < 0) or np.any(f > 1):
             raise ValueError("reactive_fraction must lie in [0,1]")
+
+        # Validate the latitude cells immediately instead of waiting until a
+        # volume integral requests area weights.
+        equiangular_latlon_area_weights(lat, lon.size)
+
+        if lon.size > 1:
+            dlon = np.diff(lon)
+            if not np.allclose(dlon, dlon[0], rtol=0, atol=1e-10):
+                raise ValueError("longitude_deg must be uniformly spaced")
+            if not np.isclose(float(dlon[0]) * lon.size, 360.0, rtol=0, atol=1e-9):
+                raise ValueError("longitude cells must span a full 360 degrees")
 
         object.__setattr__(self, "latitude_deg", lat)
         object.__setattr__(self, "longitude_deg", lon)
