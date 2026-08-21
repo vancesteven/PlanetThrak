@@ -15,6 +15,10 @@ def test_profile_npz_roundtrip(tmp_path: Path):
         gravity_m_s2=[3.71, 3.70, 3.69],
         reactive_fraction=[0.2, 0.4, 0.6],
         pore_pressure_MPa=[0.0, 2.0, 4.0],
+        bulk_modulus_Pa=[70e9, 72e9, 75e9],
+        shear_modulus_Pa=[30e9, 31e9, 32e9],
+        vp_m_s=[6000.0, 6100.0, 6200.0],
+        vs_m_s=[3200.0, 3250.0, 3300.0],
     )
     path = save_fracture_column_npz(
         tmp_path / "mars_column.npz",
@@ -31,6 +35,10 @@ def test_profile_npz_roundtrip(tmp_path: Path):
     np.testing.assert_allclose(loaded.gravity_m_s2, column.gravity_m_s2)
     np.testing.assert_allclose(loaded.reactive_fraction, column.reactive_fraction)
     np.testing.assert_allclose(loaded.pore_pressure_MPa, column.pore_pressure_MPa)
+    np.testing.assert_allclose(loaded.bulk_modulus_Pa, column.bulk_modulus_Pa)
+    np.testing.assert_allclose(loaded.shear_modulus_Pa, column.shear_modulus_Pa)
+    np.testing.assert_allclose(loaded.vp_m_s, column.vp_m_s)
+    np.testing.assert_allclose(loaded.vs_m_s, column.vs_m_s)
     assert meta["body"] == "Mars"
     assert meta["source"] == "unit-test"
     assert float(meta["time_yr"]) == 4.5e9
