@@ -54,14 +54,27 @@ def find_cracking_intersection(
     returning the shallowest intersection in the supplied monotonic pressure
     column.
 
-    Returns ``None`` when the two curves have no intersection over their common
-    pressure range.
+    A one-point archived cracking fixture is valid archive data but is not an
+    interpolable physical boundary.  Such a fixture raises ``ValueError`` here
+    rather than being silently interpreted as a no-intersection result.
+
+    Returns ``None`` when two interpolable curves have no intersection over
+    their common pressure range.
     """
+
+    if not front.is_interpolable:
+        source = f" ({front.source})" if front.source else ""
+        raise ValueError(
+            "cracking front requires at least two P-T points for interpolation"
+            f"{source}"
+        )
 
     p_prof, t_prof = _ascending_xy(profile_pressure_MPa, profile_temperature_C)
     p_depth, depth = _ascending_xy(profile_pressure_MPa, profile_depth_m)
     p_front, t_front = _ascending_xy(front.pressure_MPa, front.temperature_C)
 
+    if p_prof.size < 2:
+        raise ValueError("planetary P-T profile requires at least two points")
     if not np.all(np.isfinite(t_prof)) or not np.all(np.isfinite(depth)):
         raise ValueError("profile temperature/depth arrays must be finite")
 
