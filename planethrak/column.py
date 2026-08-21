@@ -1,10 +1,10 @@
 """Neutral radial-column interface for PlanetThrak fracture calculations.
 
-The legacy MATLAB implementation owns its planetary structure internally.  The
-Python redesign does the opposite: pressure, temperature, and depth are supplied
-by the caller.  This keeps the fracture kernel independent of PlanetProfile and
-lets the same code consume archived legacy columns, PlanetProfile outputs, or
-other thermal-evolution models.
+The legacy MATLAB implementation owns its planetary structure internally. The
+Python redesign does the opposite: pressure, temperature, depth, and optional
+material properties are supplied by the caller. This keeps the fracture kernel
+independent of PlanetProfile and lets the same code consume archived legacy
+columns, PlanetProfile outputs, or other thermal-evolution models.
 """
 
 from __future__ import annotations
@@ -21,11 +21,10 @@ from .intersection import CrackingIntersection, find_cracking_intersection
 class FractureColumn:
     """One radial material column supplied to the fracture calculation.
 
-    ``depth_m`` is measured positive downward.  Pressure must increase
-    monotonically with depth for the current legacy-front adapter.  Additional
-    material fields are intentionally optional because Phase 1 only requires
-    P-T parity; later constitutive models can consume them without changing the
-    geometry API.
+    ``depth_m`` is measured positive downward and pressure must increase with
+    depth for the current legacy-front adapter. Optional material arrays are
+    carried here so later fracture constitutive laws can use self-consistent
+    PlanetProfile/Perple_X properties without changing the geometry API.
     """
 
     depth_m: np.ndarray
@@ -34,6 +33,15 @@ class FractureColumn:
     cooling_rate_K_per_yr: np.ndarray | None = None
     pore_pressure_MPa: np.ndarray | None = None
     reactive_fraction: np.ndarray | None = None
+    density_kg_m3: np.ndarray | None = None
+    gravity_m_s2: np.ndarray | None = None
+    thermal_expansivity_Kinv: np.ndarray | None = None
+    thermal_conductivity_W_mK: np.ndarray | None = None
+    porosity_fraction: np.ndarray | None = None
+    youngs_modulus_Pa: np.ndarray | None = None
+    poisson_ratio: np.ndarray | None = None
+    fracture_toughness_Pa_sqrt_m: np.ndarray | None = None
+    grain_size_m: np.ndarray | None = None
 
     def __post_init__(self) -> None:
         z = np.asarray(self.depth_m, dtype=float)
@@ -54,15 +62,45 @@ class FractureColumn:
         object.__setattr__(self, "pressure_MPa", p)
         object.__setattr__(self, "temperature_C", t)
 
-        for name in ("cooling_rate_K_per_yr", "pore_pressure_MPa", "reactive_fraction"):
+        optional = (
+            "cooling_rate_K_per_yr",
+            "pore_pressure_MPa",
+            "reactive_fraction",
+            "density_kg_m3",
+            "gravity_m_s2",
+            "thermal_expansivity_Kinv",
+            "thermal_conductivity_W_mK",
+            "porosity_fraction",
+            "youngs_modulus_Pa",
+            "poisson_ratio",
+            "fracture_toughness_Pa_sqrt_m",
+            "grain_size_m",
+        )
+        for name in optional:
             value = getattr(self, name)
             if value is None:
                 continue
             arr = np.asarray(value, dtype=float)
             if arr.shape != z.shape or not np.all(np.isfinite(arr)):
                 raise ValueError(f"{name} must be finite and have the same shape as depth_m")
-            if name == "reactive_fraction" and (np.any(arr < 0) or np.any(arr > 1)):
-                raise ValueError("reactive_fraction must lie in [0, 1]")
+            if name in {"reactive_fraction", "porosity_fraction"} and (
+                np.any(arr < 0) or np.any(arr > 1)
+            ):
+                raise ValueError(f"{name} must lie in [0, 1]")
+            if name == "pore_pressure_MPa" and np.any(arr < 0):
+                raise ValueError("pore_pressure_MPa must be non-negative")
+            if name == "gravity_m_s2" and np.any(arr < 0):
+                raise ValueError("gravity_m_s2 must be non-negative")
+            if name in {
+                "density_kg_m3",
+                "thermal_conductivity_W_mK",
+                "youngs_modulus_Pa",
+                "fracture_toughness_Pa_sqrt_m",
+                "grain_size_m",
+            } and np.any(arr <= 0):
+                raise ValueError(f"{name} must be positive")
+            if name == "poisson_ratio" and (np.any(arr <= -1) or np.any(arr >= 0.5)):
+                raise ValueError("poisson_ratio must lie in (-1, 0.5)")
             object.__setattr__(self, name, arr)
 
 
@@ -82,16 +120,10 @@ def legacy_front_accessibility(
 ) -> LegacyAccessibility:
     """Map a legacy P-T cracking front onto a supplied column.
 
-    The archived PlanetThrak calculation reports the depth where the planetary
-    P-T path intersects the cracking boundary.  Its physical interpretation is
-    that material shallower than that front has passed through the thermal-
-    cracking regime.  This function makes that implied binary field explicit.
-
-    ``no_intersection`` controls the intentionally ambiguous case where the
-    curves do not cross over their common pressure range.  ``"none"`` returns
-    an all-zero field.  ``"all"`` returns an all-one field.  The caller must
-    choose the physically appropriate interpretation rather than having the
-    library silently extrapolate the archived lookup table.
+    Material shallower than the archived intersection is marked accessible.
+    ``no_intersection`` is deliberately explicit because an absent crossing can
+    mean either no accessible rock or an all-accessible column depending on the
+    relative positions of the two P-T curves.
     """
 
     if no_intersection not in {"none", "all"}:
