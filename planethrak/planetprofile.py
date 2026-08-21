@@ -2,9 +2,8 @@
 
 This module deliberately uses duck typing and NumPy only. PlanetThrak does not
 import PlanetProfile, so the fracture code can remain independently testable.
-PlanetProfile's current ``PlanetStruct`` exposes ``z_m``, ``P_MPa``, ``T_K``,
-``rho_kgm3``, ``g_ms2``, ``alpha_pK``, ``kTherm_WmK``, ``phi_frac`` and
-``Ppore_MPa`` arrays; those names are mapped here when present.
+Current PlanetProfile profile arrays are mapped explicitly, including seismic
+moduli needed by both fracture mechanics and the shared pyLOV3D state.
 """
 
 from __future__ import annotations
@@ -39,6 +38,10 @@ def fracture_column_from_arrays(
     thermal_expansivity_Kinv=None,
     thermal_conductivity_W_mK=None,
     porosity_fraction=None,
+    bulk_modulus_Pa=None,
+    shear_modulus_Pa=None,
+    vp_m_s=None,
+    vs_m_s=None,
     youngs_modulus_Pa=None,
     poisson_ratio=None,
     fracture_toughness_Pa_sqrt_m=None,
@@ -69,6 +72,10 @@ def fracture_column_from_arrays(
         "thermal_expansivity_Kinv": _optional_array(thermal_expansivity_Kinv, n, "thermal_expansivity_Kinv"),
         "thermal_conductivity_W_mK": _optional_array(thermal_conductivity_W_mK, n, "thermal_conductivity_W_mK"),
         "porosity_fraction": _optional_array(porosity_fraction, n, "porosity_fraction"),
+        "bulk_modulus_Pa": _optional_array(bulk_modulus_Pa, n, "bulk_modulus_Pa"),
+        "shear_modulus_Pa": _optional_array(shear_modulus_Pa, n, "shear_modulus_Pa"),
+        "vp_m_s": _optional_array(vp_m_s, n, "vp_m_s"),
+        "vs_m_s": _optional_array(vs_m_s, n, "vs_m_s"),
         "youngs_modulus_Pa": _optional_array(youngs_modulus_Pa, n, "youngs_modulus_Pa"),
         "poisson_ratio": _optional_array(poisson_ratio, n, "poisson_ratio"),
         "fracture_toughness_Pa_sqrt_m": _optional_array(fracture_toughness_Pa_sqrt_m, n, "fracture_toughness_Pa_sqrt_m"),
@@ -103,6 +110,22 @@ def fracture_column_from_arrays(
     )
 
 
+def _planetprofile_seismic_arrays(planet):
+    seismic = getattr(planet, "Seismic", None)
+    if seismic is None:
+        return None, None, None, None
+    ks = getattr(seismic, "KS_GPa", None)
+    gs = getattr(seismic, "GS_GPa", None)
+    vp = getattr(seismic, "VP_kms", None)
+    vs = getattr(seismic, "VS_kms", None)
+    return (
+        None if ks is None else np.asarray(ks, dtype=float) * 1e9,
+        None if gs is None else np.asarray(gs, dtype=float) * 1e9,
+        None if vp is None else np.asarray(vp, dtype=float) * 1e3,
+        None if vs is None else np.asarray(vs, dtype=float) * 1e3,
+    )
+
+
 def fracture_column_from_planetprofile(
     planet,
     *,
@@ -120,6 +143,11 @@ def fracture_column_from_planetprofile(
     should supply ``mask`` and/or ``reactive_fraction`` from the composition
     model. If ``z_m`` is unavailable, depth is reconstructed from ``Bulk.R_m``
     and ``r_m``.
+
+    When PlanetProfile seismic K and G are present they are carried directly in
+    SI units. If E and nu are not supplied explicitly, they are derived from
+    K and G via the isotropic relations. Callers should mask out fluid/core
+    samples when those derived solid-rock quantities are required.
     """
     if getattr(planet, "P_MPa", None) is None or getattr(planet, "T_K", None) is None:
         raise ValueError("PlanetProfile object must contain populated P_MPa and T_K arrays")
@@ -132,6 +160,13 @@ def fracture_column_from_planetprofile(
         if r is None or radius is None:
             raise ValueError("PlanetProfile object must provide z_m or both r_m and Bulk.R_m")
         z = float(radius) - np.asarray(r, dtype=float)
+
+    K, G, vp, vs = _planetprofile_seismic_arrays(planet)
+    if youngs_modulus_Pa is None and poisson_ratio is None and K is not None and G is not None:
+        denom = 3.0 * K + G
+        with np.errstate(divide="ignore", invalid="ignore"):
+            youngs_modulus_Pa = 9.0 * K * G / denom
+            poisson_ratio = (3.0 * K - 2.0 * G) / (2.0 * denom)
 
     return fracture_column_from_arrays(
         depth_m=z,
@@ -146,6 +181,10 @@ def fracture_column_from_planetprofile(
         thermal_expansivity_Kinv=getattr(planet, "alpha_pK", None),
         thermal_conductivity_W_mK=getattr(planet, "kTherm_WmK", None),
         porosity_fraction=getattr(planet, "phi_frac", None),
+        bulk_modulus_Pa=K,
+        shear_modulus_Pa=G,
+        vp_m_s=vp,
+        vs_m_s=vs,
         youngs_modulus_Pa=youngs_modulus_Pa,
         poisson_ratio=poisson_ratio,
         fracture_toughness_Pa_sqrt_m=fracture_toughness_Pa_sqrt_m,
