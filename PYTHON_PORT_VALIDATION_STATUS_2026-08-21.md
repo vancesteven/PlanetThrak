@@ -30,6 +30,8 @@ The archived Mars 1-mm, 1 C/yr path has now passed its direct MATLAB-product par
   `V_fr,react = integral A_f * f_reactive dV`.
 
 - a maximum structurally bound-water mass ceiling that is explicitly labeled a full-hydration upper bound, not a reaction prediction.
+- a neutral PlanetProfile-style radial adapter that carries pressure, temperature, density, gravity, thermal properties, porosity, pore pressure, and future fracture material parameters without importing PlanetProfile itself.
+- a dedicated reduction regression, `tests/test_legacy_mars_adapter_reduction.py`, that requires the neutral adapter path to reproduce the archived Mars cracking-depth series before modern PlanetProfile structure is introduced.
 
 ## Test order
 
@@ -75,7 +77,7 @@ The hard-gate command is therefore:
 python scripts/legacy_mars_parity.py --assert-km 1e-9
 ```
 
-The exact Python, NumPy, SciPy, and platform versions used for the first reported run were not captured in the console output and should be recorded on the next full validation run.
+This hard-gate command and the full `pytest -q` suite were both rerun locally on 2026-08-21 after the archive regression was added, and both passed. The exact aggregate pytest count and the Python/NumPy/SciPy/platform version strings were not included in the reported console excerpt, so they are not invented here; capture them in the next publication-facing environment record.
 
 ## Interpretation of the passed gate
 
@@ -83,10 +85,20 @@ This result establishes a narrow but important claim: for the archived Mars `PcT
 
 It does **not** establish that the archived cracking depths are physically accurate for Mars. In particular, the historical `rho=3500 kg/m3`, `g=6 m/s2`, constant-thermal-conductivity structure remains an approximation to be replaced and compared explicitly against self-consistent PlanetProfile/Perple_X columns.
 
-## Next gate after MATLAB parity
+## Phase-2 entry gate
 
-1. Feed the *legacy* Mars column through the neutral PlanetProfile-style radial adapter and require reduction to the passed Phase-1 result.
-2. Feed modern PlanetProfile Mars P-T-density/composition columns through the same interface and quantify how the inferred cracking front changes relative to the historical `rho=3500 kg/m3`, `g=6 m/s2`, constant-k model.
+Phase 1 is closed for the archived Mars 1-mm, 1 C/yr path. The first Phase-2 requirement is the reduction test:
+
+```bash
+pytest -q tests/test_legacy_mars_adapter_reduction.py
+```
+
+It feeds every legacy Mars P-T column through the neutral PlanetProfile-style adapter before applying the archived cracking front. Passing this test proves that the new structure interface itself introduces no change to the validated legacy result.
+
+After that gate:
+
+1. Feed modern PlanetProfile Mars P-T-density/composition columns through the same interface and quantify how the inferred cracking front changes relative to the historical `rho=3500 kg/m3`, `g=6 m/s2`, constant-k model.
+2. Decompose the cracking-depth change into pressure/gravity structure versus thermal/geotherm effects before adding composition-dependent fracture material properties.
 3. Expand to longitude-latitude columns and compute `A_f(theta,phi,z,t)` and fractured-reactive-rock volume with uncertainty.
 4. Couple accessibility to spatially variable reactive ultramafic abundance, but keep hydration efficiency downstream of mechanical accessibility until fluid supply and reaction kinetics are applied.
 5. Use the resulting common physical alteration state as the shared input to gravity, seismic, magnetic/EM, and pyLOV3D tidal forward models.
