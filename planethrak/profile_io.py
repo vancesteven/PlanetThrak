@@ -66,12 +66,22 @@ def save_fracture_column_npz(path, column: FractureColumn, **metadata) -> Path:
     return out
 
 
+def _finite_scalar(value):
+    if value is None:
+        return None
+    try:
+        x = float(value)
+    except (TypeError, ValueError):
+        return None
+    return x if np.isfinite(x) else None
+
+
 def save_planetprofile_npz(path, planet, *, mask=None, reactive_fraction=None, **metadata) -> Path:
     """Duck-typed convenience wrapper for a completed PlanetProfile object.
 
-    ``body_radius_m`` and ``body`` metadata are added automatically when the
-    corresponding PlanetProfile attributes are available, unless the caller
-    supplied explicit values.
+    Body radius, mass, C/MR^2 and name metadata are added automatically when
+    available, unless the caller supplied explicit values. For mass and moment
+    the derived completed-profile values are preferred over input constraints.
     """
     column = fracture_column_from_planetprofile(
         planet,
@@ -80,9 +90,21 @@ def save_planetprofile_npz(path, planet, *, mask=None, reactive_fraction=None, *
     )
     bulk = getattr(planet, "Bulk", None)
     if "body_radius_m" not in metadata and bulk is not None:
-        radius = getattr(bulk, "R_m", None)
+        radius = _finite_scalar(getattr(bulk, "R_m", None))
         if radius is not None:
-            metadata["body_radius_m"] = float(radius)
+            metadata["body_radius_m"] = radius
+    if "body_mass_kg" not in metadata:
+        mass = _finite_scalar(getattr(planet, "Mtot_kg", None))
+        if mass is None and bulk is not None:
+            mass = _finite_scalar(getattr(bulk, "M_kg", None))
+        if mass is not None:
+            metadata["body_mass_kg"] = mass
+    if "cmr2" not in metadata:
+        cmr2 = _finite_scalar(getattr(planet, "CMR2mean", None))
+        if cmr2 is None and bulk is not None:
+            cmr2 = _finite_scalar(getattr(bulk, "Cmeasured", None))
+        if cmr2 is not None:
+            metadata["cmr2"] = cmr2
     if "body" not in metadata:
         name = getattr(planet, "name", None)
         if name is not None:
