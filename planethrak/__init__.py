@@ -13,6 +13,7 @@ from .capacity import (
 from .column import FractureColumn, LegacyAccessibility, legacy_front_accessibility
 from .field import FractureField
 from .fronts import CrackingFront, load_front
+from .global_grid import FractureGridResult, fracture_field_from_pt_grids
 from .intersection import CrackingIntersection, find_cracking_intersection
 from .legacy_structure import RadialColumn, legacy_mars_column
 from .planetprofile import fracture_column_from_arrays, fracture_column_from_planetprofile
@@ -23,12 +24,14 @@ __all__ = [
     "CrackingIntersection",
     "FractureColumn",
     "FractureField",
+    "FractureGridResult",
     "LegacyAccessibility",
     "RadialColumn",
     "equiangular_latlon_area_weights",
     "find_cracking_intersection",
     "fracture_column_from_arrays",
     "fracture_column_from_planetprofile",
+    "fracture_field_from_pt_grids",
     "fractured_reactive_volume",
     "legacy_front_accessibility",
     "legacy_mars_column",
