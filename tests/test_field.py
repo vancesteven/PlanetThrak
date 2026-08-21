@@ -61,3 +61,16 @@ def test_field_rejects_invalid_shape_and_fraction():
         FractureField(lat, lon, r, np.full(shape, 1.01), 1.0)
     with pytest.raises(ValueError, match="reactive_fraction"):
         FractureField(lat, lon, r, np.ones(shape), -0.1)
+
+
+def test_field_rejects_nonuniform_or_incomplete_longitude_coverage():
+    lat, lon, r = _grid()
+    shape = (lat.size, lon.size, r.size - 1)
+    bad_nonuniform = lon.copy()
+    bad_nonuniform[3] += 1.0
+    with pytest.raises(ValueError, match="uniformly spaced"):
+        FractureField(lat, bad_nonuniform, r, np.ones(shape), 1.0)
+
+    incomplete = np.linspace(-135.0, 135.0, lon.size)
+    with pytest.raises(ValueError, match="full 360"):
+        FractureField(lat, incomplete, r, np.ones(shape), 1.0)
