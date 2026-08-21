@@ -18,6 +18,11 @@ from .intersection import CrackingIntersection, find_cracking_intersection
 from .legacy_structure import RadialColumn, legacy_mars_column
 from .matlab_fronts import load_matlab_cracking_front
 from .planetprofile import fracture_column_from_arrays, fracture_column_from_planetprofile
+from .profile_io import (
+    load_fracture_column_npz,
+    save_fracture_column_npz,
+    save_planetprofile_npz,
+)
 from .radiogenic import past_radiogenic_heat_uthk
 
 __all__ = [
@@ -37,8 +42,11 @@ __all__ = [
     "legacy_front_accessibility",
     "legacy_mars_column",
     "load_front",
+    "load_fracture_column_npz",
     "load_matlab_cracking_front",
     "maximum_bound_water_mass",
     "past_radiogenic_heat_uthk",
+    "save_fracture_column_npz",
+    "save_planetprofile_npz",
     "spherical_shell_volumes",
 ]
