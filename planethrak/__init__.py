@@ -11,6 +11,7 @@ from .capacity import (
     spherical_shell_volumes,
 )
 from .column import FractureColumn, LegacyAccessibility, legacy_front_accessibility
+from .field import FractureField
 from .fronts import CrackingFront, load_front
 from .intersection import CrackingIntersection, find_cracking_intersection
 from .legacy_structure import RadialColumn, legacy_mars_column
@@ -20,6 +21,7 @@ __all__ = [
     "CrackingFront",
     "CrackingIntersection",
     "FractureColumn",
+    "FractureField",
     "LegacyAccessibility",
     "RadialColumn",
     "equiangular_latlon_area_weights",
