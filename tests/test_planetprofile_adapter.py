@@ -21,7 +21,11 @@ def test_array_adapter_reproduces_legacy_pt_column_exactly():
     np.testing.assert_allclose(column.temperature_C, legacy.temperature_C, rtol=0, atol=1e-12)
 
 
-def test_planetprofile_duck_adapter_maps_current_planetstruct_names():
+def test_planetprofile_duck_adapter_maps_current_planetstruct_names_and_elasticity():
+    K_GPa = np.array([70.0, 72.0, 75.0])
+    G_GPa = np.array([30.0, 31.0, 32.0])
+    vp_kms = np.sqrt((K_GPa + 4.0 * G_GPa / 3.0) * 1e9 / np.array([2900.0, 2920.0, 2950.0])) / 1e3
+    vs_kms = np.sqrt(G_GPa * 1e9 / np.array([2900.0, 2920.0, 2950.0])) / 1e3
     planet = SimpleNamespace(
         z_m=np.array([0.0, 1000.0, 2000.0]),
         P_MPa=np.array([0.1, 5.0, 10.0]),
@@ -32,6 +36,7 @@ def test_planetprofile_duck_adapter_maps_current_planetstruct_names():
         kTherm_WmK=np.array([3.0, 3.1, 3.2]),
         phi_frac=np.array([0.1, 0.05, 0.0]),
         Ppore_MPa=np.array([0.0, 2.0, 4.0]),
+        Seismic=SimpleNamespace(KS_GPa=K_GPa, GS_GPa=G_GPa, VP_kms=vp_kms, VS_kms=vs_kms),
     )
     column = fracture_column_from_planetprofile(
         planet,
@@ -44,6 +49,14 @@ def test_planetprofile_duck_adapter_maps_current_planetstruct_names():
     np.testing.assert_allclose(column.thermal_conductivity_W_mK, planet.kTherm_WmK)
     np.testing.assert_allclose(column.porosity_fraction, planet.phi_frac)
     np.testing.assert_allclose(column.pore_pressure_MPa, planet.Ppore_MPa)
+    np.testing.assert_allclose(column.bulk_modulus_Pa, K_GPa * 1e9)
+    np.testing.assert_allclose(column.shear_modulus_Pa, G_GPa * 1e9)
+    np.testing.assert_allclose(column.vp_m_s, vp_kms * 1e3)
+    np.testing.assert_allclose(column.vs_m_s, vs_kms * 1e3)
+    expected_E = 9.0 * K_GPa * G_GPa / (3.0 * K_GPa + G_GPa) * 1e9
+    expected_nu = (3.0 * K_GPa - 2.0 * G_GPa) / (2.0 * (3.0 * K_GPa + G_GPa))
+    np.testing.assert_allclose(column.youngs_modulus_Pa, expected_E)
+    np.testing.assert_allclose(column.poisson_ratio, expected_nu)
 
 
 def test_adapter_sorts_deep_to_shallow_input_and_applies_mask():
@@ -71,6 +84,7 @@ def test_adapter_can_reconstruct_depth_from_radius():
         kTherm_WmK=None,
         phi_frac=None,
         Ppore_MPa=None,
+        Seismic=None,
     )
     column = fracture_column_from_planetprofile(planet)
     np.testing.assert_allclose(column.depth_m, [0.0, 1000.0, 2000.0])
