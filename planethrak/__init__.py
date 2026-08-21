@@ -5,6 +5,7 @@ workflow before introducing more general fracture constitutive models.
 """
 
 from .capacity import (
+    equiangular_latlon_area_weights,
     fractured_reactive_volume,
     maximum_bound_water_mass,
     spherical_shell_volumes,
@@ -21,6 +22,7 @@ __all__ = [
     "FractureColumn",
     "LegacyAccessibility",
     "RadialColumn",
+    "equiangular_latlon_area_weights",
     "find_cracking_intersection",
     "fractured_reactive_volume",
     "legacy_front_accessibility",
