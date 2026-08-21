@@ -38,6 +38,10 @@ class FractureColumn:
     thermal_expansivity_Kinv: np.ndarray | None = None
     thermal_conductivity_W_mK: np.ndarray | None = None
     porosity_fraction: np.ndarray | None = None
+    bulk_modulus_Pa: np.ndarray | None = None
+    shear_modulus_Pa: np.ndarray | None = None
+    vp_m_s: np.ndarray | None = None
+    vs_m_s: np.ndarray | None = None
     youngs_modulus_Pa: np.ndarray | None = None
     poisson_ratio: np.ndarray | None = None
     fracture_toughness_Pa_sqrt_m: np.ndarray | None = None
@@ -71,6 +75,10 @@ class FractureColumn:
             "thermal_expansivity_Kinv",
             "thermal_conductivity_W_mK",
             "porosity_fraction",
+            "bulk_modulus_Pa",
+            "shear_modulus_Pa",
+            "vp_m_s",
+            "vs_m_s",
             "youngs_modulus_Pa",
             "poisson_ratio",
             "fracture_toughness_Pa_sqrt_m",
@@ -89,11 +97,12 @@ class FractureColumn:
                 raise ValueError(f"{name} must lie in [0, 1]")
             if name == "pore_pressure_MPa" and np.any(arr < 0):
                 raise ValueError("pore_pressure_MPa must be non-negative")
-            if name == "gravity_m_s2" and np.any(arr < 0):
-                raise ValueError("gravity_m_s2 must be non-negative")
+            if name in {"gravity_m_s2", "shear_modulus_Pa", "vp_m_s", "vs_m_s"} and np.any(arr < 0):
+                raise ValueError(f"{name} must be non-negative")
             if name in {
                 "density_kg_m3",
                 "thermal_conductivity_W_mK",
+                "bulk_modulus_Pa",
                 "youngs_modulus_Pa",
                 "fracture_toughness_Pa_sqrt_m",
                 "grain_size_m",
