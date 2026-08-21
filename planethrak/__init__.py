@@ -15,6 +15,7 @@ from .field import FractureField
 from .fronts import CrackingFront, load_front
 from .intersection import CrackingIntersection, find_cracking_intersection
 from .legacy_structure import RadialColumn, legacy_mars_column
+from .planetprofile import fracture_column_from_arrays, fracture_column_from_planetprofile
 from .radiogenic import past_radiogenic_heat_uthk
 
 __all__ = [
@@ -26,6 +27,8 @@ __all__ = [
     "RadialColumn",
     "equiangular_latlon_area_weights",
     "find_cracking_intersection",
+    "fracture_column_from_arrays",
+    "fracture_column_from_planetprofile",
     "fractured_reactive_volume",
     "legacy_front_accessibility",
     "legacy_mars_column",
