@@ -25,9 +25,10 @@ def test_load_legacy_1mm_1cyr_table_exact_values():
 
 
 def test_all_shipped_pct_tables_are_two_column_finite_fronts():
-    paths = sorted(ROOT.glob("PcT*.ext")) + sorted(ROOT.glob("PcTp*.ext"))
+    # PcT*.ext includes the PcTp* effective-pressure variants as well.
+    paths = sorted(ROOT.glob("PcT*.ext"))
     # Avoid accidental test success if the legacy fixtures are moved/renamed.
-    assert len(paths) >= 6
+    assert len(paths) >= 9
     for path in paths:
         front = load_front(path)
         assert front.pressure_MPa.size >= 2
