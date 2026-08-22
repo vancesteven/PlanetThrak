@@ -15,7 +15,7 @@ from .field import FractureField
 from .fronts import CrackingFront, load_front
 from .global_grid import FractureGridResult, fracture_field_from_pt_grids
 from .intersection import CrackingIntersection, find_cracking_intersection
-from .legacy_structure import RadialColumn, legacy_mars_column
+from .legacy_structure import RadialColumn, legacy_mars_column, legacy_mars_pt_on_depths
 from .matlab_fronts import load_matlab_cracking_front
 from .planetprofile import fracture_column_from_arrays, fracture_column_from_planetprofile
 from .profile_io import (
@@ -24,8 +24,10 @@ from .profile_io import (
     save_planetprofile_npz,
 )
 from .radiogenic import past_radiogenic_heat_uthk
+from .staged_comparison import CrackingDepthStages, staged_mars_cracking_depths
 
 __all__ = [
+    "CrackingDepthStages",
     "CrackingFront",
     "CrackingIntersection",
     "FractureColumn",
@@ -41,6 +43,7 @@ __all__ = [
     "fractured_reactive_volume",
     "legacy_front_accessibility",
     "legacy_mars_column",
+    "legacy_mars_pt_on_depths",
     "load_front",
     "load_fracture_column_npz",
     "load_matlab_cracking_front",
@@ -49,4 +52,5 @@ __all__ = [
     "save_fracture_column_npz",
     "save_planetprofile_npz",
     "spherical_shell_volumes",
+    "staged_mars_cracking_depths",
 ]
